@@ -28,7 +28,7 @@ pub struct Config {
 }
 
 fn get_config() -> anyhow::Result<Config> {
-    dotenv::dotenv().expect("Failed to read .env file");
+    dotenv::dotenv();
     let yat_codes: Vec<Uuid> = env::var("YAT_CODE_IDS")
         .expect("YAT_CODE_IDS not found")
         .split(',')

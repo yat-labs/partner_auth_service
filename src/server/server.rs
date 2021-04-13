@@ -62,6 +62,7 @@ async fn sign_request(
 pub async fn start_server(config: &Config) -> std::io::Result<()> {
     let addr = config.addr.clone();
     let config = config.clone();
+    log
     HttpServer::new(move || {
         App::new()
             .route("/sign/{code_id}", web::post().to(sign_request))
