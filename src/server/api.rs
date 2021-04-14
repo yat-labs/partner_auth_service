@@ -147,13 +147,8 @@ impl YatApi {
         let client = Client::default();
         let json = json!({
             "method": "Free",
-            "payment_method_id": "ec18d2d7-d2e0-41e4-98e4-847f14422d8a",
-            "provider": "Free",
             "pubkey": pubkey.to_hex(),
-            "save_payment_method": true,
-            "set_default": true,
-            "token": "string",
-            "tracking_data": {},
+            "tracking_data": {"source": "Yat Partner API"},
         });
 
         let mut response = client

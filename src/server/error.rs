@@ -1,4 +1,3 @@
-use actix::MailboxError;
 use actix_web::{
     client::JsonPayloadError,
     error::{ErrorInternalServerError, PayloadError},
@@ -10,8 +9,6 @@ use thiserror::Error;
 pub enum ServerError {
     #[error("IO Error: {0}")]
     IoError(#[from] std::io::Error),
-    #[error("Mailbox Error: {0}")]
-    MailboxError(#[from] MailboxError),
 }
 
 #[derive(Error, Debug)]
