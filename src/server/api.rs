@@ -93,7 +93,6 @@ impl YatApi {
 
         let mut response = client
             .post(format!("{}/auth/token", self.api_url))
-            .header("X-Api-Key", self.api_key.as_str())
             .send_json(&json)
             .await
             .map_err(|e| ApiError::SendRequestError(e.to_string()))?;
