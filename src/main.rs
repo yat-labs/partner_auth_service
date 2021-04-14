@@ -1,12 +1,13 @@
 mod cli;
+mod commands;
 mod errors;
 mod server;
-mod commands;
 
 use crate::cli::codes::attach_pubkey_to_code;
 use crate::cli::keys::{generate_keypair, CodeKeypair};
 use crate::errors::YatError;
-use crate::server::server::start_server;
+use crate::server::start_server;
+
 use clap::{App as ClapApp, Arg, ArgMatches, SubCommand};
 use std::collections::HashMap;
 use std::env;
@@ -17,19 +18,21 @@ use tari_crypto::ristretto::{RistrettoPublicKey, RistrettoSecretKey};
 use tari_crypto::tari_utilities::hex::Hex;
 use uuid::Uuid;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const LOG_TARGET: &str = "server";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Config {
     api_url: String,
     api_key: String,
     addr: SocketAddr,
     codes: HashMap<Uuid, CodeKeypair>,
+    code_ids: Vec<Uuid>,
 }
 
 fn get_config() -> anyhow::Result<Config> {
-    dotenv::dotenv();
-    let yat_codes: Vec<Uuid> = env::var("YAT_CODE_IDS")
+    dotenv::dotenv()?;
+    let code_ids: Vec<Uuid> = env::var("YAT_CODE_IDS")
         .expect("YAT_CODE_IDS not found")
         .split(',')
         .into_iter()
@@ -43,33 +46,46 @@ fn get_config() -> anyhow::Result<Config> {
         .map(RistrettoSecretKey::from_hex)
         .collect::<Result<Vec<RistrettoSecretKey>, _>>()?;
 
-    let api_url = env::var("YAT_API_URL").unwrap_or(String::from("https://api-dev.yat.rocks"));
+    let api_url = env::var("YAT_API_URL").unwrap_or_else(|_| "https://api-dev.yat.rocks".into());
     let api_key = env::var("YAT_API_KEY").expect("YAT_API_KEY not found");
 
-    let host = env::var("HOST").unwrap_or(String::from("127.0.0.1"));
-    let port = env::var("PORT").unwrap_or(String::from("8080"));
+    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".into());
+    let port = env::var("PORT").unwrap_or_else(|_| "8080".into());
 
     let addr = SocketAddr::from_str(&format!("{}:{}", host, port))?;
 
     let mut codes = HashMap::new();
-    for (pos, code) in yat_codes.into_iter().enumerate() {
+    for (pos, code) in code_ids.iter().enumerate() {
         let secret = yat_secrets
             .get(pos)
-            .map(|s| s.clone())
+            .cloned()
             .ok_or(YatError::MissingSecret)?;
+
         codes.insert(
-            code,
+            *code,
             CodeKeypair {
                 pubkey: RistrettoPublicKey::from_secret_key(&secret),
                 secret,
             },
         );
     }
+
+    // also store the first/default code with the nil Uuid
+    let secret = yat_secrets.get(0).cloned().ok_or(YatError::MissingSecret)?;
+    codes.insert(
+        Uuid::nil(),
+        CodeKeypair {
+            pubkey: RistrettoPublicKey::from_secret_key(&secret),
+            secret,
+        },
+    );
+
     Ok(Config {
         api_url,
         api_key,
         addr,
         codes,
+        code_ids,
     })
 }
 
@@ -118,6 +134,7 @@ fn get_matches() -> ArgMatches<'static> {
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
+    env_logger::init();
     let config = get_config()?;
     let matches = get_matches();
 
@@ -136,7 +153,9 @@ async fn main() -> anyhow::Result<()> {
                 .unwrap();
         }
     } else {
-        start_server(&config).await?;
+        log::info!(target: LOG_TARGET, "Server starting at {}", config.addr);
+        start_server(config).await?;
     }
+
     Ok(())
 }
