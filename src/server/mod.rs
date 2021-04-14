@@ -167,7 +167,9 @@ pub async fn start_server(config: Config) -> anyhow::Result<(), ServerError> {
 
         let api_url = config.api_url.clone();
         let api_key = config.api_key.clone();
-        let yat_api = YatApi::new(api_url, api_key);
+        let activation_url = config.activation_url.clone();
+        let activation_token = config.activation_token.clone();
+        let yat_api = YatApi::new(api_url, api_key, activation_url, activation_token);
 
         App::new()
             .data(state)

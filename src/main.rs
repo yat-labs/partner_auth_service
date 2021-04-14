@@ -25,6 +25,8 @@ const LOG_TARGET: &str = "server";
 pub struct Config {
     api_url: String,
     api_key: String,
+    activation_url: String,
+    activation_token: String,
     addr: SocketAddr,
     codes: HashMap<Uuid, CodeKeypair>,
     code_ids: Vec<Uuid>,
@@ -46,8 +48,12 @@ fn get_config() -> anyhow::Result<Config> {
         .map(RistrettoSecretKey::from_hex)
         .collect::<Result<Vec<RistrettoSecretKey>, _>>()?;
 
-    let api_url = env::var("YAT_API_URL").unwrap_or_else(|_| "https://api-dev.yat.rocks".into());
+    let api_url = env::var("YAT_API_URL").unwrap_or_else(|_| "https://a.y.at".into());
     let api_key = env::var("YAT_API_KEY").expect("YAT_API_KEY not found");
+
+    let activation_url = env::var("YAT_ACTIVATION_URL").unwrap_or_else(|_| "https://activate.y.at".into());
+    let activation_token = env::var("YAT_ACTIVATION_TOKEN").expect("YAT_ACTIVATION_TOKEN not found");
+
 
     let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".into());
     let port = env::var("PORT").unwrap_or_else(|_| "8080".into());
@@ -83,6 +89,8 @@ fn get_config() -> anyhow::Result<Config> {
     Ok(Config {
         api_url,
         api_key,
+        activation_url,
+        activation_token,
         addr,
         codes,
         code_ids,
