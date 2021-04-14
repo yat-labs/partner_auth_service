@@ -5,6 +5,7 @@ use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
+use std::time::Duration;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_crypto::tari_utilities::hex::Hex;
 use uuid::Uuid;
@@ -13,11 +14,23 @@ use uuid::Uuid;
 pub struct YatApi {
     api_url: String,
     api_key: String,
+    activation_url: String,
+    activation_token: String,
 }
 
 impl YatApi {
-    pub fn new(api_url: String, api_key: String) -> Self {
-        YatApi { api_url, api_key }
+    pub fn new(
+        api_url: String,
+        api_key: String,
+        activation_url: String,
+        activation_token: String,
+    ) -> Self {
+        YatApi {
+            api_url,
+            api_key,
+            activation_url,
+            activation_token,
+        }
     }
 
     /// Register a new user
@@ -65,8 +78,9 @@ impl YatApi {
         });
 
         let mut response = client
-            .patch(format!("{}/users/{}/activate", self.api_url, user_id))
-            .header("X-Api-Key", self.api_key.as_str())
+            .post(format!("{}/activate/{}", self.activation_url, user_id))
+            .timeout(Duration::from_secs(30))
+            .header("X-Bypass-Token", self.activation_token.as_str())
             .send_json(&json)
             .await
             .map_err(|e| ApiError::SendRequestError(e.to_string()))?;
