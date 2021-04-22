@@ -33,7 +33,7 @@ pub struct Config {
 }
 
 fn get_config() -> anyhow::Result<Config> {
-    dotenv::dotenv()?;
+    dotenv::dotenv().ok();
     let code_ids: Vec<Uuid> = env::var("YAT_CODE_IDS")
         .expect("YAT_CODE_IDS not found")
         .split(',')
