@@ -51,9 +51,10 @@ fn get_config() -> anyhow::Result<Config> {
     let api_url = env::var("YAT_API_URL").unwrap_or_else(|_| "https://a.y.at".into());
     let api_key = env::var("YAT_API_KEY").expect("YAT_API_KEY not found");
 
-    let activation_url = env::var("YAT_ACTIVATION_URL").unwrap_or_else(|_| "https://activate.y.at".into());
-    let activation_token = env::var("YAT_ACTIVATION_TOKEN").expect("YAT_ACTIVATION_TOKEN not found");
-
+    let activation_url =
+        env::var("YAT_ACTIVATION_URL").unwrap_or_else(|_| "https://activate.y.at".into());
+    let activation_token =
+        env::var("YAT_ACTIVATION_TOKEN").expect("YAT_ACTIVATION_TOKEN not found");
 
     let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".into());
     let port = env::var("PORT").unwrap_or_else(|_| "8080".into());
