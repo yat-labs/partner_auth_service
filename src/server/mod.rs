@@ -68,7 +68,7 @@ async fn sign_handler(
     let keypair = state
         .codes
         .get(&Uuid::nil())
-        .ok_or_else(|| ErrorInternalServerError("Interal state error: No code/keypair."))?;
+        .ok_or_else(|| ErrorInternalServerError("Internal state error: No code/keypair."))?;
 
     let sig = sign_challenge(keypair.secret.clone(), data.alternate_id.clone())
         .map_err(ErrorInternalServerError)?;
