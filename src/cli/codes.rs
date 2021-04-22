@@ -11,12 +11,6 @@ pub async fn attach_pubkey_to_code(
     match RistrettoPublicKey::from_hex(&pubkey_hex) {
         Ok(p) => {
             let client = actix_web::client::Client::new();
-            println!(
-                "{}/codes/{code_id}/pubkeys/{pubkey}",
-                config.api_url,
-                code_id = code_id,
-                pubkey = p.to_hex()
-            );
             match client
                 .post(format!(
                     "{}/codes/{code_id}/pubkeys/{pubkey}",
