@@ -4,7 +4,6 @@ use actix_web::{
 };
 use tari_crypto::tari_utilities::hex::HexError;
 use thiserror::Error;
-use http::StatusCode;
 
 #[derive(Error, Debug)]
 pub enum ServerError {
