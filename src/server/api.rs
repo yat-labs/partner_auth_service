@@ -79,11 +79,17 @@ impl YatApi {
 
         let mut response = client
             .post(format!("{}/activate/{}", self.activation_url, user_id))
-            .timeout(Duration::from_secs(30))
             .header("X-Bypass-Token", self.activation_token.as_str())
+            .timeout(Duration::from_secs(30))
             .send_json(&json)
             .await
-            .map_err(|e| ApiError::SendRequestError(e.to_string()))?;
+            .map_err(|e| {
+                ApiError::SendRequestError(format!(
+                    "Failed to activate: {} {}",
+                    self.activation_url,
+                    e.to_string()
+                ))
+            })?;
 
         let user: DisplayUser = match response.status() {
             StatusCode::OK => response.json().await?,
@@ -114,12 +120,66 @@ impl YatApi {
         // todo: error messages should be improved
         let auth: Auth = match response.status() {
             StatusCode::OK => response.json().await?,
-            status => return Err(ApiError::HttpError(status.to_string())),
+            status => {
+                return Err(ApiError::HttpError(format!(
+                    "Could not login: {}",
+                    status.to_string()
+                )))
+            }
         };
 
         Ok(auth)
     }
 
+    /// Get user details, first login, then fetch account details
+    pub async fn user_details(
+        &self,
+        alternate_id: String,
+        password: String,
+    ) -> Result<(Auth, DisplayUser), ApiError> {
+        let auth = self.user_login(alternate_id, password).await?;
+        let client = Client::default();
+
+        let mut response = client
+            .get(format!("{}/account", self.api_url))
+            .bearer_auth(auth.access_token.clone())
+            .send()
+            .await
+            .map_err(|e| ApiError::SendRequestError(e.to_string()))?;
+
+        let incoming_user: User = match response.status() {
+            StatusCode::OK => response.json().await?,
+            status => {
+                return Err(ApiError::HttpError(format!(
+                    "Current user account details - {}",
+                    status.to_string()
+                )))
+            }
+        };
+
+        Ok((auth, incoming_user.user))
+    }
+
+    pub async fn user_yats(&self, auth: Auth) -> Result<Vec<String>, ApiError> {
+        let client = Client::default();
+
+        let mut response = client
+            .get(format!("{}/emoji_id", self.api_url))
+            .bearer_auth(auth.access_token.clone())
+            .send()
+            .await
+            .map_err(|e| ApiError::SendRequestError(e.to_string()))?;
+        let yats: Vec<String> = match response.status() {
+            StatusCode::OK => response.json().await?,
+            status => {
+                return Err(ApiError::HttpError(format!(
+                    "Current user yats - {}",
+                    status.to_string()
+                )))
+            }
+        };
+        Ok(yats)
+    }
     /// Request a random Yat for the user
     pub async fn random_yat(
         &self,
@@ -141,7 +201,9 @@ impl YatApi {
             .bearer_auth(access_token)
             .send_json(&json)
             .await
-            .map_err(|e| ApiError::SendRequestError(e.to_string()))?;
+            .map_err(|e| {
+                ApiError::SendRequestError(format!("Generate Random Yat - {}", e.to_string()))
+            })?;
 
         // todo: error messages should be improved
         let order: DisplayOrder = match response.status() {
@@ -199,7 +261,7 @@ pub struct DisplayUser {
     pub remaining_free_emoji: i32,
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Auth {
     pub access_token: String,
     pub refresh_token: String,
@@ -247,6 +309,13 @@ pub struct DisplayOrderItem {
 pub enum OrderItemTypes {
     Discount,
     EmojiId,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct ProcessedResult {
+    pub auth: Auth,
+    pub user: DisplayUser,
+    pub yats: Vec<String>,
 }
 
 #[derive(Deserialize, Debug, Serialize)]
