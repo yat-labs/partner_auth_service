@@ -1,6 +1,6 @@
 use super::{error::ApiError, Signature};
 
-use actix_web::client::Client;
+use crate::server::client::client_with_connector_timeout;
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -39,7 +39,7 @@ impl YatApi {
         alternate_id: String,
         password: String,
     ) -> Result<DisplayUser, ApiError> {
-        let client = Client::default();
+        let client = client_with_connector_timeout(None);
         let json = json!({
             "alternate_id": alternate_id,
             "password": password,
@@ -72,10 +72,11 @@ impl YatApi {
         user_id: Uuid,
         activation_source: Option<String>,
     ) -> Result<DisplayUser, ApiError> {
-        let client = Client::default();
         let json = json!({
             "activation_source": activation_source,
         });
+
+        let client = client_with_connector_timeout(None);
 
         let mut response = client
             .post(format!("{}/activate/{}", self.activation_url, user_id))
@@ -105,7 +106,7 @@ impl YatApi {
         alternate_id: String,
         password: String,
     ) -> Result<Auth, ApiError> {
-        let client = Client::default();
+        let client = client_with_connector_timeout(None);
         let json = json!({
             "alternate_id": alternate_id,
             "password": password,
@@ -138,7 +139,7 @@ impl YatApi {
         password: String,
     ) -> Result<(Auth, DisplayUser), ApiError> {
         let auth = self.user_login(alternate_id, password).await?;
-        let client = Client::default();
+        let client = client_with_connector_timeout(None);
 
         let mut response = client
             .get(format!("{}/account", self.api_url))
@@ -161,7 +162,7 @@ impl YatApi {
     }
 
     pub async fn user_yats(&self, auth: Auth) -> Result<Vec<String>, ApiError> {
-        let client = Client::default();
+        let client = client_with_connector_timeout(None);
 
         let mut response = client
             .get(format!("{}/emoji_id", self.api_url))
@@ -188,7 +189,7 @@ impl YatApi {
         signature: Signature,
         pubkey: RistrettoPublicKey,
     ) -> Result<DisplayOrder, ApiError> {
-        let client = Client::default();
+        let client = client_with_connector_timeout(None);
         let json = json!({
             "nonce": signature.get_public_nonce().to_hex(),
             "signature": signature.get_signature().to_hex(),
@@ -220,7 +221,7 @@ impl YatApi {
         access_token: String,
         pubkey: RistrettoPublicKey,
     ) -> Result<DisplayOrder, ApiError> {
-        let client = Client::default();
+        let client = client_with_connector_timeout(None);
         let json = json!({
             "method": "Free",
             "pubkey": pubkey.to_hex(),

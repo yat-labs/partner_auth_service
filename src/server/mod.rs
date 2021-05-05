@@ -17,6 +17,7 @@ use api::YatApi;
 use error::ServerError;
 
 pub mod api;
+pub mod client;
 mod error;
 
 #[derive(Debug, Deserialize)]
