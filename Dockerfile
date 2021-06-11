@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 FROM buildpack-deps:stretch as builder
 
 ENV RUSTUP_HOME=/usr/local/rustup \
